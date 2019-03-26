@@ -11,7 +11,8 @@
 
 #ifndef RAYH
 #define RAYH
-#include "vec3.h"
+
+#include "utils.h"
 
 class ray
 {

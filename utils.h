@@ -2,10 +2,9 @@
 #define UTILSH
 
 
-#ifndef EIGENH
-#define EIGENH
 #include <Eigen/Core>
-#endif 
+typedef Eigen::Vector3f vec3;
+
 
 namespace utils{
 

@@ -23,6 +23,9 @@
 #include "camera.h"
 #include "material.h"
 
+#include <Eigen/Core>
+#include <Eigen/Geometry>
+
 #include "utils.h"
 
 typedef uint8_t byte;
@@ -34,14 +37,14 @@ vec3 color(const ray& r, hitable *world, int depth) {
         ray scattered;
         vec3 attenuation;
         if (depth < 50 && rec.mat_ptr->scatter(r, rec, attenuation, scattered)) {
-             return attenuation*color(scattered, world, depth+1);
+             return attenuation.cwiseProduct(color(scattered, world, depth+1));
         }
         else {
             return vec3(0,0,0);
         }
     }
     else {
-        vec3 unit_direction = unit_vector(r.direction());
+        vec3 unit_direction = vec3(r.direction());
         float t = 0.5*(unit_direction.y() + 1.0);
         return (1.0-t)*vec3(1.0, 1.0, 1.0) + t*vec3(0.5, 0.7, 1.0);
     }
@@ -57,7 +60,7 @@ hitable *random_scene() {
         for (int b = -11; b < 11; b++) {
             float choose_mat = utils::randf();
             vec3 center(a+0.9*utils::randf(),0.2,b+0.9*utils::randf()); 
-            if ((center-vec3(4,0.2,0)).length() > 0.9) { 
+            if ((center-vec3(4,0.2,0)).norm() > 0.9) { 
                 if (choose_mat < 0.8) {  // diffuse
                     list[i++] = new sphere(center, 0.2, new lambertian(vec3(utils::randf()*utils::randf(), utils::randf()*utils::randf(), utils::randf()*utils::randf())));
                 }

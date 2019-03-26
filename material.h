@@ -26,8 +26,8 @@ float schlick(float cosine, float ref_idx) {
 }
 
 bool refract(const vec3& v, const vec3& n, float ni_over_nt, vec3& refracted) {
-    vec3 uv = unit_vector(v);
-    float dt = dot(uv, n);
+    vec3 uv = v.normalized();
+    float dt = uv.dot(n);
     float discriminant = 1.0 - ni_over_nt*ni_over_nt*(1-dt*dt);
     if (discriminant > 0) {
         refracted = ni_over_nt*(uv - n*dt) - n*sqrt(discriminant);
@@ -39,7 +39,7 @@ bool refract(const vec3& v, const vec3& n, float ni_over_nt, vec3& refracted) {
 
 
 vec3 reflect(const vec3& v, const vec3& n) {
-     return v - 2*dot(v,n)*n;
+     return v - 2*v.dot(n)*n;
 }
 
 
@@ -47,7 +47,7 @@ vec3 random_in_unit_sphere() {
     vec3 p;
     do {
         p = 2.0*vec3(utils::randf(),utils::randf(),utils::randf()) - vec3(1,1,1);
-    } while (p.squared_length() >= 1.0);
+    } while (p.dot(p) >= 1.0);
     return p;
 }
 
@@ -74,10 +74,10 @@ class metal : public material {
     public:
         metal(const vec3& a, float f) : albedo(a) { if (f < 1) fuzz = f; else fuzz = 1; }
         virtual bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered) const  {
-            vec3 reflected = reflect(unit_vector(r_in.direction()), rec.normal);
+            vec3 reflected = reflect(Eigen::Vector3f(r_in.direction()).normalized(), rec.normal);
             scattered = ray(rec.p, reflected + fuzz*random_in_unit_sphere());
             attenuation = albedo;
-            return (dot(scattered.direction(), rec.normal) > 0);
+            return (scattered.direction().dot(rec.normal) > 0);
         }
         vec3 albedo;
         float fuzz;
@@ -94,17 +94,17 @@ class dielectric : public material {
              vec3 refracted;
              float reflect_prob;
              float cosine;
-             if (dot(r_in.direction(), rec.normal) > 0) {
+             if (r_in.direction().dot(rec.normal) > 0) {
                   outward_normal = -rec.normal;
                   ni_over_nt = ref_idx;
          //         cosine = ref_idx * dot(r_in.direction(), rec.normal) / r_in.direction().length();
-                  cosine = dot(r_in.direction(), rec.normal) / r_in.direction().length();
+                  cosine = r_in.direction().dot(rec.normal) / r_in.direction().norm();
                   cosine = sqrt(1 - ref_idx*ref_idx*(1-cosine*cosine));
              }
              else {
                   outward_normal = rec.normal;
                   ni_over_nt = 1.0 / ref_idx;
-                  cosine = -dot(r_in.direction(), rec.normal) / r_in.direction().length();
+                  cosine = -r_in.direction().dot(rec.normal) / r_in.direction().norm();
              }
              if (refract(r_in.direction(), outward_normal, ni_over_nt, refracted)) 
                 reflect_prob = schlick(cosine, ref_idx);
